@@ -7,6 +7,26 @@ import {AuthHttp, AuthConfig, tokenNotExpired, JwtHelper} from 'angular2-jwt';
 declare var Auth0Lock;
 
 @Component({
+  selector: 'public-route'
+})
+@View({
+  template: `<h1>Hello from a public route</h1>`
+})
+class PublicRoute {}
+
+@Component({
+  selector: 'private-route'
+})
+
+@View({
+  template: `<h1>Hello from private route</h1>`
+})
+
+@CanActivate(() => tokenNotExpired())
+
+class PrivateRoute {}
+
+@Component({
   selector: 'app',
   directives: [ ROUTER_DIRECTIVES ],
   template: `
@@ -14,8 +34,23 @@ declare var Auth0Lock;
     <button *ngIf="!loggedIn()" (click)="login()">Login</button>
     <button *ngIf="loggedIn()" (click)="logout()">Logout</button>
     <hr>
+    <div>
+      <button [routerLink]="['./PublicRoute']">Public Route</button>
+      <button *ngIf="loggedIn()" [routerLink]="['./PrivateRoute']">Private Route</button>
+      <router-outlet></router-outlet>
+    </div>
+    <hr>
+    <button (click)="getThing()">Get Thing</button>
+    <button *ngIf="loggedIn()" (click)="tokenSubscription()">Show Token from Observable</button>
+    <button (click)="getSecretThing()">Get Secret Thing</button>
+    <button *ngIf="loggedIn()" (click)="useJwtHelper()">Use Jwt Helper</button>
   `
 })
+
+@RouteConfig([
+  { path: '/public-route', component: PublicRoute, as: 'PublicRoute' },
+  { path: '/private-route', component: PrivateRoute, as: 'PrivateRoute' }
+])
 
 export class App {
 
@@ -46,6 +81,23 @@ export class App {
     return tokenNotExpired();
   }
 
+  getThing() {
+    this.http.get('http://localhost:3001/ping')
+      .subscribe(
+        data => console.log(data.json()),
+        err => console.log(err),
+        () => console.log('Complete')
+      );
+  }
+
+  getSecretThing() {
+    this.authHttp.get('http://localhost:3001/secured/ping')
+      .subscribe(
+        data => console.log(data.json()),
+        err => console.log(err),
+        () => console.log('Complete')
+      );
+  }
 
   tokenSubscription() {
     this.authHttp.tokenStream.subscribe(
